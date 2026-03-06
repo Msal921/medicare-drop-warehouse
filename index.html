@@ -917,17 +917,7 @@
       roundRect(c, cargoX, tp.y + th * 0.05, cargoW - 4, th * 0.9, 4);
       c.stroke();
 
-      // Medicare Drop branding on cargo side
-      c.fillStyle = '#1e3a5f';
-      c.font = `bold ${Math.max(8, th * 0.18)}px Sora`;
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.fillText('MEDICARE DROP', cargoX + (cargoW - 4) / 2, tp.y + th / 2);
-      c.font = `${Math.max(7, th * 0.13)}px Space Mono`;
-      c.fillStyle = '#3b82f6';
-      c.fillText('medicaredrop.com', cargoX + (cargoW - 4) / 2, tp.y + th / 2 + th * 0.2);
-      c.textAlign = 'left';
-      c.textBaseline = 'alphabetic';
+
 
       // Cargo door lines (vertical panels)
       c.strokeStyle = '#cbd5e1';
