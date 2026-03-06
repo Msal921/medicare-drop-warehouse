@@ -1363,7 +1363,15 @@ document.addEventListener('keydown', e => {
     if (selectedId !== null) {
       const rack = racks.find(r => r.id === selectedId);
       if (rack) {
-        [rack.w, rack.h] = [rack.h, rack.w];
+        // Rotate around center: compute center, swap dims, reposition
+                const cx = rack.x + rack.w / 2;
+                const cy = rack.y + rack.h / 2;
+                [rack.w, rack.h] = [rack.h, rack.w];
+                rack.x = snapToGrid(cx - rack.w / 2);
+                rack.y = snapToGrid(cy - rack.h / 2);
+                // Clamp to stay within building bounds
+                rack.x = Math.max(0, Math.min(rack.x, TOTAL_W - rack.w));
+                rack.y = Math.max(0, Math.min(rack.y, TOTAL_H - rack.h));
         showInfoBar(rack);
         updateStats();
         render();
