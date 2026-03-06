@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Santa Rosa Warehouse Planner — Medicare Drop</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --border: #252a3a;
+    --accent: #3b82f6;
+    --accent2: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --grid: #1e2436;
+    --floor: #1a2035;
+    --wall: #334155;
+    --rack-std: #3b82f6;
+    --rack-heavy: #f59e0b;
+    --rack-wire: #10b981;
+    --rack-wall: #8b5cf6;
+    --rack-mobile: #ec4899;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 16px;
+  }
+  .header-left {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo-drop {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #60a5fa, #2563eb);
+    clip-path: polygon(50% 0%, 80% 30%, 100% 60%, 80% 85%, 50% 100%, 20% 85%, 0% 60%, 20% 30%);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    flex-shrink: 0;
+  }
+  .header-title { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: 0.3px; }
+  .header-sub { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+  .header-stats {
+    display: flex; gap: 20px;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-val { font-size: 16px; font-weight: 700; color: var(--accent); font-family: 'Space Mono', monospace; }
+  .stat-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  .header-actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: none;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Sora', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+  .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); }
+  .btn-danger:hover { background: var(--red); color: #fff; }
+
+  /* MAIN LAYOUT */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+  .sidebar-section {
+    padding: 14px 14px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  /* Rack palette items */
+  .rack-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin-bottom: 6px;
+    cursor: grab;
+    transition: all 0.15s;
+    user-select: none;
+    background: var(--bg);
+  }
+  .rack-item:hover { border-color: var(--accent); transform: translateX(2px); }
+  .rack-item:active { cursor: grabbing; }
+  .rack-swatch {
+    width: 28px; height: 28px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .rack-info { flex: 1; }
+  .rack-name { font-size: 11px; font-weight: 600; color: var(--text); }
+  .rack-dims { font-size: 9px; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+  /* Placed item list */
+  .placed-list {
+    flex: 1;
+    padding: 14px;
+    overflow-y: auto;
+  }
+  .placed-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition: background 0.1s;
+    font-size: 11px;
+  }
+  .placed-item:hover { background: var(--border); }
+  .placed-item.selected-list { background: rgba(59,130,246,0.15); }
+  .placed-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .placed-name { flex: 1; color: var(--text); }
+  .placed-pos { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); }
+  .delete-btn {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 12px; padding: 2px 4px;
+    border-radius: 3px; transition: all 0.1s;
+  }
+  .delete-btn:hover { color: var(--red); background: rgba(239,68,68,0.1); }
+
+  /* CANVAS AREA */
+  .canvas-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  /* Legend */
+  .legend {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 10px;
+    z-index: 10;
+  }
+  .legend-title { color: var(--muted); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; font-size: 9px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; color: var(--text); }
+  .legend-color { width: 12px; height: 12px; border-radius: 2px; }
+
+  .btn-render {
+    background: linear-gradient(135deg, #6d28d9, #2563eb);
+    color: #fff;
+    border: none;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 14px rgba(109,40,217,0.5);
+    animation: renderPulse 2.5s ease-in-out infinite;
+  }
+  .btn-render:hover { filter: brightness(1.2); box-shadow: 0 0 22px rgba(109,40,217,0.8); }
+  @keyframes renderPulse {
+    0%,100% { box-shadow: 0 0 10px rgba(109,40,217,0.4); }
+    50%      { box-shadow: 0 0 22px rgba(99,102,241,0.9); }
+  }
+
+  /* 3D Render Modal */
+  #render-modal {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+  }
+  #render-modal.open { display: flex; }
+  .render-modal-box {
+    background: #0d0f1a;
+    border: 1px solid #4c1d95;
+    border-radius: 14px;
+    width: 92vw; max-width: 1100px;
+    height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(109,40,217,0.4);
+  }
+  .render-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid #1e1b4b;
+    background: #0a0b14;
+    flex-shrink: 0;
+  }
+  .render-modal-title {
+    font-size: 14px; font-weight: 700;
+    background: linear-gradient(90deg, #a78bfa, #60a5fa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: 0.5px;
+  }
+  .render-modal-close {
+    background: none; border: 1px solid #334155;
+    color: #94a3b8; border-radius: 6px;
+    padding: 4px 10px; cursor: pointer; font-size: 13px;
+  }
+  .render-modal-close:hover { background: #1e293b; color: #fff; }
+  .render-modal-body {
+    flex: 1; position: relative; overflow: hidden;
+  }
+  #render-iframe {
+    width: 100%; height: 100%;
+    border: none; background: #000;
+  }
+  .render-loading {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #0d0f1a;
+    gap: 18px;
+  }
+  .render-loading-spinner {
+    width: 52px; height: 52px;
+    border: 3px solid #1e1b4b;
+    border-top-color: #7c3aed;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .render-loading-text {
+    font-size: 13px; color: #a78bfa;
+    font-family: 'Space Mono', monospace;
+    text-align: center; line-height: 1.7;
+  }
+  .render-loading-step {
+    font-size: 10px; color: #4c1d95;
+    font-family: 'Space Mono', monospace;
+  }
+  .render-controls {
+    display: flex; gap: 10px; padding: 10px 20px;
+    border-top: 1px solid #1e1b4b;
+    background: #0a0b14;
+    align-items: center;
+    font-size: 10px; color: #475569;
+    font-family: 'Space Mono', monospace;
+    flex-shrink: 0;
+  }
+  .render-hint { margin-left: auto; }
+
+  .scale-bar {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    z-index: 10;
+  }
+
+  #save-indicator {
+    position: fixed;
+    bottom: 18px; right: 18px;
+    background: #0d1424;
+    border: 1px solid #1e3a5f;
+    color: #3b82f6;
+    font-size: 10px;
+    font-family: 'Space Mono', monospace;
+    padding: 5px 12px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 999;
+    pointer-events: none;
+  }
+
+  /* Tooltip */
+  #tooltip {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 10px;
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    font-family: 'Space Mono', monospace;
+    color: var(--text);
+  }
+
+  /* Selected info bar — sits between header and canvas, never overlaps */
+  #info-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 20px;
+    background: #0d1424;
+    border-bottom: 1px solid var(--accent);
+    font-size: 11px;
+    color: var(--text);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    box-shadow: 0 2px 12px rgba(59,130,246,0.15);
+  }
+  #info-bar.visible { display: flex; }
+  #info-bar span { color: var(--muted); font-size: 10px; }
+  #info-bar strong { color: var(--accent); font-family: 'Space Mono', monospace; }
+  .rotate-hint { font-size: 9px; color: var(--muted); border: 1px solid var(--border); padding: 2px 6px; border-radius: 4px; }
+  .size-btn {
+    background: var(--border);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.1s;
+    font-family: monospace;
+  }
+  .size-btn:hover { background: var(--accent); color: #fff; }
+
+  canvas {
+    display: block;
+    cursor: crosshair;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-drop"></div>
+    <div>
+      <div class="header-title">Santa Rosa Warehouse Planner</div>
+      <div class="header-sub">1,728 SQ FT · PINER ROAD · MEDICARE DROP</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat">
+      <div class="stat-val" id="stat-racks">0</div>
+      <div class="stat-label">Racks Placed</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-sqft">0</div>
+      <div class="stat-label">Sq Ft Used</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-free">1,728</div>
+      <div class="stat-label">Sq Ft Free</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost" onclick="toggleGrid()">Toggle Grid</button>
+    <button class="btn btn-ghost" id="truck-btn" onclick="toggleTruck()">🚐 Show Truck</button>
+    <button class="btn btn-ghost" onclick="loadDMELayout()">↺ Reset DME Layout</button>
+    <button class="btn btn-ghost" onclick="clearSelected()">Deselect</button>
+    <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+    <button class="btn btn-primary" onclick="saveLayout()">💾 Save Layout</button>
+    <button class="btn btn-render" onclick="open3DRender()">✦ 3D Render</button>
+  </div>
+</header>
+
+<div id="info-bar">
+  <span>Selected: </span><strong id="info-name">—</strong>
+  <span>Pos: </span><strong id="info-pos">—</strong>
+  <span>W:</span>
+  <button class="size-btn" onclick="resizeSelected('w',-1)">−</button>
+  <strong id="info-w">—</strong>
+  <button class="size-btn" onclick="resizeSelected('w', 1)">+</button>
+  <span>D:</span>
+  <button class="size-btn" onclick="resizeSelected('h',-1)">−</button>
+  <strong id="info-h">—</strong>
+  <button class="size-btn" onclick="resizeSelected('h', 1)">+</button>
+  <div class="rotate-hint">R = Rotate</div>
+  <div class="rotate-hint">Del = Remove</div>
+  <div class="rotate-hint">⟷ Drag Edge to Resize</div>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Drag to Place</div>
+
+      <div class="rack-item" draggable="true" data-type="standard" data-w="4" data-h="2" data-color="#3b82f6">
+        <div class="rack-swatch" style="background:rgba(59,130,246,0.15);border:2px solid #3b82f6;">🗄️</div>
+        <div class="rack-info">
+          <div class="rack-name">Standard Shelf</div>
+          <div class="rack-dims">4′ × 2′</div>
+        </div>
+      </div>
+
+      <div class="rack-item" draggable="true" data-type="standard-lg" data-w="8" data-h="2" data-color="#3b82f6">
+        <div class="rack-swatch" style="background:rgba(59,130,246,0.15);border:2px solid #3b82f6;">🗄️</div>
+        <div class="rack-info">
+          <div class="rack-name">Standard Shelf LG</div>
+          <div class="rack-dims">8′ × 2′</div>
+        </div>
+      </div>
+
+      <div class="rack-item" draggable="true" data-type="heavy" data-w="8" data-h="3" data-color="#f59e0b">
+        <div class="rack-swatch" style="background:rgba(245,158,11,0.15);border:2px solid #f59e0b;">📦</div>
+        <div class="rack-info">
+          <div class="rack-name">Heavy-Duty Pallet</div>
+          <div class="rack-dims">8′ × 3′</div>
+        </div>
+      </div>
+
+      <div class="rack-item" draggable="true" data-type="heavy-xl" data-w="12" data-h="4" data-color="#f59e0b">
+        <div class="rack-swatch" style="background:rgba(245,158,11,0.15);border:2px solid #f59e0b;">📦</div>
+        <div class="rack-info">
+          <div class="rack-name">Pallet Rack XL</div>
+          <div class="rack-dims">12′ × 4′</div>
+        </div>
+      </div>
+
+      <div class="rack-item" draggable="true" data-type="wire" data-w="4" data-h="2" data-color="#10b981">
+        <div class="rack-swatch" style="background:rgba(16,185,129,0.15);border:2px solid #10b981;">🔲</div>
+        <div class="rack-info">
+          <div class="rack-name">Wire Shelving</div>
+          <div class="rack-dims">4′ × 2′</div>
+        </div>
+      </div>
+
+      <div class="rack-item" draggable="true" data-type="wall-mount" data-w="6" data-h="1" data-color="#8b5cf6">
+        <div class="rack-swatch" style="background:rgba(139,92,246,0.15);border:2px solid #8b5cf6;">📌</div>
+        <div class="rack-info">
+          <div class="rack-name">Wall-Mounted</div>
+          <div class="rack-dims">6′ × 1′</div>
+        </div>
+      </div>
+
+      <div class="rack-item" draggable="true" data-type="mobile" data-w="3" data-h="2" data-color="#ec4899">
+        <div class="rack-swatch" style="background:rgba(236,72,153,0.15);border:2px solid #ec4899;">🛒</div>
+        <div class="rack-info">
+          <div class="rack-name">Mobile/Rolling</div>
+          <div class="rack-dims">3′ × 2′</div>
+        </div>
+      </div>
+
+      <div class="rack-item" draggable="true" data-type="workbench" data-w="6" data-h="2" data-color="#64748b">
+        <div class="rack-swatch" style="background:rgba(100,116,139,0.15);border:2px solid #64748b;">🔧</div>
+        <div class="rack-info">
+          <div class="rack-name">Workbench</div>
+          <div class="rack-dims">6′ × 2′</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="flex:1;">
+      <div class="sidebar-label">Placed Items (<span id="placed-count">0</span>)</div>
+      <div class="placed-list" id="placed-list"></div>
+    </div>
+  </div>
+
+  <div class="canvas-wrap" id="canvas-wrap">
+    <canvas id="canvas"></canvas>
+    <div class="scale-bar">Scale: 1 grid square = 1 ft · Snap: 1 ft</div>
+    <div class="legend">
+      <div class="legend-title">DME Categories</div>
+      <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div>Wheelchairs</div>
+      <div class="legend-item"><div class="legend-color" style="background:#60a5fa"></div>Transport Chairs</div>
+      <div class="legend-item"><div class="legend-color" style="background:#10b981"></div>Walkers</div>
+      <div class="legend-item"><div class="legend-color" style="background:#8b5cf6"></div>Bathroom DME</div>
+      <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div>Beds</div>
+      <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div>Power / CRT Chairs</div>
+      <div class="legend-item"><div class="legend-color" style="background:#64748b;border:1px solid #475569"></div>Fixed (Office/WC)</div>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+<div id="save-indicator">💾 Saved</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('canvas-wrap');
+
+// Warehouse dimensions in feet — matched exactly to floor plan
+// Building: 36' wide × 48' deep (total)
+// Main warehouse: full 36' wide × 26' deep (top)
+// Bottom section (22' deep):
+//   Office/Mezzanine: 11' wide on far left × 22' deep
+//   Storage/Upper Mezz: 25' wide × 10' deep (middle-bottom)
+//   Restroom: 10' wide × 10' deep (right of storage, bottom)
+// Roll-up door: left wall, upper area
+
+const SCALE = 13; // pixels per foot
+const GRID = 1;   // grid snap in feet — supports 1, 2, 3, 4ft etc.
+const GRID_PX = GRID * SCALE;
+
+// Floor plan definition — origin (0,0) = top-left corner of building
+const FLOOR = {
+  // Total building
+  bldgW: 36, bldgH: 48,
+
+  // Main warehouse (top full-width section)
+  mainX: 0,  mainY: 0,
+  mainW: 36, mainH: 26,
+
+  // Office / Upper Mezzanine (bottom-left)
+  officeX: 0,    officeY: 26,
+  officeW: 11,   officeH: 22,
+
+  // Storage / Upper Mezzanine (bottom-middle)
+  storageX: 11,  storageY: 38,
+  storageW: 25,  storageH: 10,
+
+  // Restroom (bottom-right)
+  wcX: 26,   wcY: 38,
+  wcW: 10,   wcH: 10,
+
+  // Staircase (middle-bottom, between office and storage)
+  stairX: 11, stairY: 26,
+  stairW: 8,  stairH: 12,
+
+  // Roll-up door (left wall, upper)
+  doorX: 0,  doorY: 6,
+  doorH: 14,
+};
+
+// Total floor bounding box
+const TOTAL_W = 36;
+const TOTAL_H = 48;
+
+let OFFSET_X = 40;
+let OFFSET_Y = 30;
+
+let showGrid = true;
+let showTruck = false;
+
+function drawTruck() {
+  const c = ctx;
+
+  // Ford Transit dimensions: ~19.5' long × 7' wide
+  // Pulled HALFWAY in through the roll-up door (door is on left wall at y=6, h=14)
+  // Door center Y = FLOOR.doorY + FLOOR.doorH/2 = 6 + 7 = 13
+  // Truck is horizontal, cab sticking out LEFT of building wall (negative x), rear inside
+
+  const truckL  = 19.5; // feet total length
+  const truckW  = 7;    // feet wide
+  const halfIn  = truckL / 2; // 9.75ft inside
+  const doorCY  = FLOOR.doorY + FLOOR.doorH / 2; // vertical center of door in feet
+  const truckY  = doorCY - truckW / 2;           // top edge of truck in feet
+
+  // Truck spans from -halfIn (outside, left of wall) to +halfIn (inside warehouse)
+  const truckStartX = -halfIn; // outside portion
+  const truckEndX   =  halfIn; // inside portion
+
+  const tp = ftToCanvas(truckStartX, truckY);
+  const tw = truckL * SCALE;
+  const th = truckW * SCALE;
+
+  // ── OUTSIDE PORTION (cab, left of wall) ──
+  // Clipping mask so outside fades naturally
+  c.save();
+
+  // Shadow under truck
+  c.shadowColor = 'rgba(0,0,0,0.6)';
+  c.shadowBlur = 14;
+  c.shadowOffsetY = 4;
+
+  // ── TRUCK BODY ──
+  // Full body (we'll draw cab and cargo sections)
+  const cabW   = 5 * SCALE;   // cab is ~5ft long
+  const cargoW = tw - cabW;
+
+  // Cargo body (rear - inside warehouse)
+  const cargoX = tp.x + cabW;
+  c.fillStyle = '#e8edf2';
+  roundRect(c, cargoX, tp.y + th*0.05, cargoW - 4, th*0.9, 4);
+  c.fill();
+
+  // Cargo body stroke
+  c.shadowBlur = 0;
+  c.strokeStyle = '#94a3b8';
+  c.lineWidth = 1.5;
+  roundRect(c, cargoX, tp.y + th*0.05, cargoW - 4, th*0.9, 4);
+  c.stroke();
+
+  // Medicare Drop branding on cargo side
+  c.fillStyle = '#1e3a5f';
+  c.font = `bold ${Math.max(8, th*0.18)}px Sora`;
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText('MEDICARE DROP', cargoX + (cargoW - 4)/2, tp.y + th/2);
+  c.font = `${Math.max(7, th*0.13)}px Space Mono`;
+  c.fillStyle = '#3b82f6';
+  c.fillText('medicaredrop.com', cargoX + (cargoW - 4)/2, tp.y + th/2 + th*0.2);
+  c.textAlign = 'left';
+  c.textBaseline = 'alphabetic';
+
+  // Cargo door lines (vertical panels)
+  c.strokeStyle = '#cbd5e1';
+  c.lineWidth = 0.8;
+  for (let p = 1; p < 4; p++) {
+    const lx = cargoX + p * (cargoW - 4) / 4;
+    c.beginPath(); c.moveTo(lx, tp.y + th*0.05); c.lineTo(lx, tp.y + th*0.95); c.stroke();
+  }
+
+  // Cab body
+  c.shadowColor = 'rgba(0,0,0,0.4)';
+  c.shadowBlur = 8;
+  c.fillStyle = '#dde3ea';
+  roundRect(c, tp.x, tp.y + th*0.08, cabW, th*0.84, 6);
+  c.fill();
+  c.shadowBlur = 0;
+  c.strokeStyle = '#94a3b8';
+  c.lineWidth = 1.5;
+  roundRect(c, tp.x, tp.y + th*0.08, cabW, th*0.84, 6);
+  c.stroke();
+
+  // Windshield (front of cab, leftmost)
+  const wsW = cabW * 0.38;
+  const wsH = th * 0.5;
+  c.fillStyle = 'rgba(147,197,253,0.6)';
+  roundRect(c, tp.x + cabW*0.08, tp.y + th*0.25, wsW, wsH, 3);
+  c.fill();
+  c.strokeStyle = '#93c5fd';
+  c.lineWidth = 1;
+  roundRect(c, tp.x + cabW*0.08, tp.y + th*0.25, wsW, wsH, 3);
+  c.stroke();
+
+  // Side window
+  c.fillStyle = 'rgba(147,197,253,0.5)';
+  roundRect(c, tp.x + cabW*0.5, tp.y + th*0.2, cabW*0.35, th*0.4, 3);
+  c.fill();
+  c.strokeStyle = '#93c5fd';
+  c.lineWidth = 1;
+  roundRect(c, tp.x + cabW*0.5, tp.y + th*0.2, cabW*0.35, th*0.4, 3);
+  c.stroke();
+
+  // Grille / front bumper
+  c.fillStyle = '#475569';
+  c.fillRect(tp.x - 2, tp.y + th*0.3, 5, th*0.4);
+  // Headlight
+  c.fillStyle = '#fef08a';
+  c.beginPath();
+  c.ellipse(tp.x + 2, tp.y + th*0.22, 4, 3, 0, 0, Math.PI*2);
+  c.fill();
+  c.beginPath();
+  c.ellipse(tp.x + 2, tp.y + th*0.78, 4, 3, 0, 0, Math.PI*2);
+  c.fill();
+
+  // Rear lights (right end of cargo, inside)
+  c.fillStyle = '#ef4444';
+  c.beginPath();
+  c.ellipse(tp.x + tw - 4, tp.y + th*0.22, 4, 3, 0, 0, Math.PI*2);
+  c.fill();
+  c.beginPath();
+  c.ellipse(tp.x + tw - 4, tp.y + th*0.78, 4, 3, 0, 0, Math.PI*2);
+  c.fill();
+
+  // ── WHEELS (top-down view = rectangles) ──
+  const wheelW = 1.2 * SCALE;
+  const wheelH = 0.55 * SCALE;
+  c.fillStyle = '#1e293b';
+
+  // Front-left wheel (outside)
+  roundRect(c, tp.x + cabW*0.15, tp.y - wheelH/2, wheelW, wheelH, 2);
+  c.fill();
+  // Front-right wheel (outside)
+  roundRect(c, tp.x + cabW*0.15, tp.y + th - wheelH/2, wheelW, wheelH, 2);
+  c.fill();
+  // Rear-left wheel (inside)
+  roundRect(c, tp.x + tw - cabW*0.3 - wheelW, tp.y - wheelH/2, wheelW, wheelH, 2);
+  c.fill();
+  // Rear-right wheel (inside)
+  roundRect(c, tp.x + tw - cabW*0.3 - wheelW, tp.y + th - wheelH/2, wheelW, wheelH, 2);
+  c.fill();
+
+  // Wheel shine
+  c.fillStyle = '#334155';
+  [
+    [tp.x + cabW*0.15 + wheelW/2, tp.y],
+    [tp.x + cabW*0.15 + wheelW/2, tp.y + th],
+    [tp.x + tw - cabW*0.3 - wheelW/2, tp.y],
+    [tp.x + tw - cabW*0.3 - wheelW/2, tp.y + th],
+  ].forEach(([wx, wy]) => {
+    c.beginPath(); c.arc(wx, wy, 3, 0, Math.PI*2); c.fill();
+  });
+
+  // ── WALL CLIP LINE (building left wall) ──
+  // Draw a subtle overlay where the truck passes through the wall
+  const wallX = ftToCanvas(0, 0).x;
+  c.strokeStyle = 'rgba(100,116,139,0.6)';
+  c.lineWidth = 3;
+  c.setLineDash([4, 3]);
+  c.beginPath();
+  c.moveTo(wallX, tp.y - 10);
+  c.lineTo(wallX, tp.y + th + 10);
+  c.stroke();
+  c.setLineDash([]);
+
+  // ── CLEARANCE ARROWS ──
+  // Show clearance lines from truck sides to walls/racks
+  const truckInsideEndX  = ftToCanvas(halfIn, 0).x;
+  const truckTopY        = tp.y;
+  const truckBotY        = tp.y + th;
+
+  // Clearance label inside
+  c.fillStyle = 'rgba(251,191,36,0.9)';
+  c.font = 'bold 9px Space Mono';
+  c.textAlign = 'center';
+  c.fillText(`${(halfIn).toFixed(1)}' inside`, wallX + (truckInsideEndX - wallX)/2, truckTopY - 8);
+  c.fillText(`${(halfIn).toFixed(1)}' outside`, wallX - (wallX - tp.x)/2, truckTopY - 8);
+  c.textAlign = 'left';
+
+  // ── DIMENSION ANNOTATION ──
+  // Dashed line showing full truck length
+  c.strokeStyle = 'rgba(251,191,36,0.4)';
+  c.lineWidth = 1;
+  c.setLineDash([5, 4]);
+  c.beginPath(); c.moveTo(tp.x, truckTopY - 18); c.lineTo(tp.x + tw, truckTopY - 18); c.stroke();
+  c.setLineDash([]);
+  // End ticks
+  c.strokeStyle = 'rgba(251,191,36,0.6)';
+  c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(tp.x, truckTopY - 22); c.lineTo(tp.x, truckTopY - 14); c.stroke();
+  c.beginPath(); c.moveTo(tp.x + tw, truckTopY - 22); c.lineTo(tp.x + tw, truckTopY - 14); c.stroke();
+  c.fillStyle = 'rgba(251,191,36,0.85)';
+  c.font = 'bold 9px Space Mono';
+  c.textAlign = 'center';
+  c.fillText(`Ford Transit ~${truckL}' total`, tp.x + tw/2, truckTopY - 24);
+  c.textAlign = 'left';
+
+  c.restore();
+}
+
+function toggleTruck() {
+  showTruck = !showTruck;
+  const btn = document.getElementById('truck-btn');
+  if (showTruck) {
+    btn.textContent = '🚐 Hide Truck';
+    btn.style.borderColor = '#f59e0b';
+    btn.style.color = '#f59e0b';
+  } else {
+    btn.textContent = '🚐 Show Truck';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  }
+  render();
+}
+let racks = [];
+let selectedId = null;
+let draggingRack = null;
+let dragOffset = {x:0, y:0};
+let ghostRack = null;
+let idCounter = 0;
+
+function resizeCanvas() {
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  // Center the floor plan
+  OFFSET_X = Math.max(40, (canvas.width  - TOTAL_W * SCALE) / 2);
+  OFFSET_Y = Math.max(30, (canvas.height - TOTAL_H * SCALE) / 2);
+  render();
+}
+
+function ftToCanvas(fx, fy) {
+  return { x: OFFSET_X + fx * SCALE, y: OFFSET_Y + fy * SCALE };
+}
+function canvasToFt(cx, cy) {
+  return { x: (cx - OFFSET_X) / SCALE, y: (cy - OFFSET_Y) / SCALE };
+}
+function snapToGrid(v) {
+  return Math.round(v / GRID) * GRID;
+}
+
+// ── DRAWING ──────────────────────────────────────────
+
+function drawFloor() {
+  const c = ctx;
+
+  // Background
+  c.fillStyle = '#0f1117';
+  c.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid
+  if (showGrid) {
+    c.strokeStyle = '#1e2436';
+    c.lineWidth = 0.5;
+    for (let gx = 0; gx <= TOTAL_W; gx += GRID) {
+      const p = ftToCanvas(gx, 0);
+      c.beginPath(); c.moveTo(p.x, OFFSET_Y); c.lineTo(p.x, OFFSET_Y + TOTAL_H*SCALE); c.stroke();
+    }
+    for (let gy = 0; gy <= TOTAL_H; gy += GRID) {
+      const p = ftToCanvas(0, gy);
+      c.beginPath(); c.moveTo(OFFSET_X, p.y); c.lineTo(OFFSET_X + TOTAL_W*SCALE, p.y); c.stroke();
+    }
+  }
+
+  // ── MAIN WAREHOUSE (top full-width, 36×26) ──
+  const m = ftToCanvas(FLOOR.mainX, FLOOR.mainY);
+  c.fillStyle = '#141929';
+  c.fillRect(m.x, m.y, FLOOR.mainW*SCALE, FLOOR.mainH*SCALE);
+  c.strokeStyle = '#475569';
+  c.lineWidth = 2.5;
+  c.strokeRect(m.x, m.y, FLOOR.mainW*SCALE, FLOOR.mainH*SCALE);
+
+  // Main area label
+  c.fillStyle = '#1e3a5f';
+  c.font = '700 13px Sora';
+  c.textAlign = 'center';
+  c.fillText('MAIN WAREHOUSE', m.x + FLOOR.mainW*SCALE/2, m.y + FLOOR.mainH*SCALE/2 - 8);
+  c.font = '10px Space Mono';
+  c.fillStyle = '#2d4a6e';
+  c.fillText("36' × 26' · 936 sq ft", m.x + FLOOR.mainW*SCALE/2, m.y + FLOOR.mainH*SCALE/2 + 10);
+  c.textAlign = 'left';
+
+  // ── OFFICE / UPPER MEZZANINE (bottom-left, 11×22) ──
+  const o = ftToCanvas(FLOOR.officeX, FLOOR.officeY);
+  c.fillStyle = '#131a2e';
+  c.fillRect(o.x, o.y, FLOOR.officeW*SCALE, FLOOR.officeH*SCALE);
+  c.strokeStyle = '#475569';
+  c.lineWidth = 2.5;
+  c.strokeRect(o.x, o.y, FLOOR.officeW*SCALE, FLOOR.officeH*SCALE);
+  // Label (rotated — narrow space)
+  c.save();
+  c.translate(o.x + FLOOR.officeW*SCALE/2, o.y + FLOOR.officeH*SCALE/2);
+  c.rotate(-Math.PI/2);
+  c.fillStyle = '#334155';
+  c.font = '600 9px Sora';
+  c.textAlign = 'center';
+  c.fillText('OFFICE / GROUND FLOOR', 0, -6);
+  c.font = '8px Space Mono';
+  c.fillStyle = '#3d4f6b';
+  c.fillText("UPPER MEZZANINE  11'×22'", 0, 8);
+  c.textAlign = 'left';
+  c.restore();
+
+  // ── STORAGE / UPPER MEZZANINE (bottom-middle, 25×10) ──
+  const st = ftToCanvas(FLOOR.storageX, FLOOR.storageY);
+  c.fillStyle = '#101520';
+  c.fillRect(st.x, st.y, FLOOR.storageW*SCALE, FLOOR.storageH*SCALE);
+  c.strokeStyle = '#475569';
+  c.lineWidth = 2.5;
+  c.strokeRect(st.x, st.y, FLOOR.storageW*SCALE, FLOOR.storageH*SCALE);
+  c.fillStyle = '#2d3748';
+  c.font = '600 10px Sora';
+  c.textAlign = 'center';
+  c.fillText('STORAGE / GROUND FLOOR', st.x + FLOOR.storageW*SCALE/2 - FLOOR.wcW*SCALE/2, st.y + 18);
+  c.font = '9px Space Mono';
+  c.fillStyle = '#3d4f6b';
+  c.fillText("UPPER MEZZANINE  25'×10'", st.x + FLOOR.storageW*SCALE/2 - FLOOR.wcW*SCALE/2, st.y + 32);
+  c.textAlign = 'left';
+
+  // ── RESTROOM (bottom-right, 10×10) ──
+  const wc = ftToCanvas(FLOOR.wcX, FLOOR.wcY);
+  c.fillStyle = '#111825';
+  c.fillRect(wc.x, wc.y, FLOOR.wcW*SCALE, FLOOR.wcH*SCALE);
+  c.strokeStyle = '#475569';
+  c.lineWidth = 2.5;
+  c.strokeRect(wc.x, wc.y, FLOOR.wcW*SCALE, FLOOR.wcH*SCALE);
+  c.fillStyle = '#334155';
+  c.font = '600 9px Sora';
+  c.textAlign = 'center';
+  c.fillText('RESTROOM', wc.x + FLOOR.wcW*SCALE/2, wc.y + FLOOR.wcH*SCALE/2 + 4);
+  c.textAlign = 'left';
+
+  // ── STAIRCASE (between office and storage, 8×12) ──
+  const st2 = ftToCanvas(FLOOR.stairX, FLOOR.stairY);
+  c.fillStyle = '#0e1520';
+  c.fillRect(st2.x, st2.y, FLOOR.stairW*SCALE, FLOOR.stairH*SCALE);
+  c.strokeStyle = '#334155';
+  c.lineWidth = 1.5;
+  c.strokeRect(st2.x, st2.y, FLOOR.stairW*SCALE, FLOOR.stairH*SCALE);
+  // Draw stair lines
+  const steps = 8;
+  const stepH = (FLOOR.stairH * SCALE) / steps;
+  c.strokeStyle = '#2d3a50';
+  c.lineWidth = 1;
+  for (let s = 1; s < steps; s++) {
+    const sy = st2.y + s * stepH;
+    c.beginPath(); c.moveTo(st2.x, sy); c.lineTo(st2.x + FLOOR.stairW*SCALE, sy); c.stroke();
+  }
+  c.fillStyle = '#2d3748';
+  c.font = '8px Sora';
+  c.textAlign = 'center';
+  c.fillText('STAIRS', st2.x + FLOOR.stairW*SCALE/2, st2.y + FLOOR.stairH*SCALE/2);
+  c.textAlign = 'left';
+
+  // ── ROLL-UP DOOR (left wall) ──
+  const d = ftToCanvas(FLOOR.doorX, FLOOR.doorY);
+  c.fillStyle = '#1e3a5f';
+  c.fillRect(d.x - 8, d.y, 8, FLOOR.doorH*SCALE);
+  c.strokeStyle = '#3b82f6';
+  c.lineWidth = 2;
+  c.strokeRect(d.x - 8, d.y, 8, FLOOR.doorH*SCALE);
+  // Horizontal lines suggesting roll-up panels
+  c.strokeStyle = 'rgba(59,130,246,0.4)';
+  c.lineWidth = 1;
+  for (let i = 1; i < 7; i++) {
+    const ly = d.y + i * (FLOOR.doorH*SCALE/7);
+    c.beginPath(); c.moveTo(d.x-8, ly); c.lineTo(d.x, ly); c.stroke();
+  }
+  c.fillStyle = '#3b82f6';
+  c.font = 'bold 9px Sora';
+  c.save();
+  c.translate(d.x - 4, d.y + FLOOR.doorH*SCALE/2);
+  c.rotate(-Math.PI/2);
+  c.textAlign = 'center';
+  c.fillText('ROLL UP', 0, 3);
+  c.textAlign = 'left';
+  c.restore();
+
+  // ── OUTER BUILDING BORDER ──
+  const tl = ftToCanvas(0, 0);
+  c.strokeStyle = '#64748b';
+  c.lineWidth = 3;
+  // Main outline of full building
+  c.beginPath();
+  c.moveTo(tl.x, tl.y);
+  c.lineTo(tl.x + FLOOR.bldgW*SCALE, tl.y);
+  c.lineTo(tl.x + FLOOR.bldgW*SCALE, tl.y + FLOOR.bldgH*SCALE);
+  c.lineTo(tl.x, tl.y + FLOOR.bldgH*SCALE);
+  c.lineTo(tl.x, tl.y);
+  c.stroke();
+
+  // ── DIMENSION LABELS ──
+  c.fillStyle = '#64748b';
+  c.font = '11px Space Mono';
+  c.textAlign = 'center';
+  // Top width: 36'
+  c.fillText("36'", tl.x + FLOOR.bldgW*SCALE/2, tl.y - 10);
+  // Right height: 48'
+  c.save();
+  c.translate(tl.x + FLOOR.bldgW*SCALE + 20, tl.y + FLOOR.bldgH*SCALE/2);
+  c.rotate(Math.PI/2);
+  c.fillText("48'", 0, 0);
+  c.restore();
+  // Bottom sub-dimensions
+  c.font = '9px Space Mono';
+  c.fillStyle = '#475569';
+  c.fillText("11'", tl.x + FLOOR.officeW*SCALE/2, tl.y + FLOOR.bldgH*SCALE + 14);
+  c.fillText("25'", tl.x + FLOOR.officeW*SCALE + FLOOR.storageW*SCALE/2, tl.y + FLOOR.bldgH*SCALE + 14);
+  // Left sub-dimension
+  c.save();
+  c.translate(tl.x - 22, tl.y + FLOOR.mainH*SCALE + FLOOR.officeH*SCALE/2);
+  c.rotate(-Math.PI/2);
+  c.fillText("21.5'", 0, 0);
+  c.restore();
+  // Right storage height
+  c.save();
+  c.translate(tl.x + FLOOR.bldgW*SCALE + 34, tl.y + FLOOR.storageY*SCALE + FLOOR.storageH*SCALE/2);
+  c.rotate(Math.PI/2);
+  c.fillText("10'", 0, 0);
+  c.restore();
+
+  c.textAlign = 'left';
+}
+
+function drawRack(rack, isSelected, isGhost=false) {
+  const c = ctx;
+  const p = ftToCanvas(rack.x, rack.y);
+  const pw = rack.w * SCALE;
+  const ph = rack.h * SCALE;
+
+  const alpha = isGhost ? 0.55 : 1.0;
+  const col = rack.color;
+
+  // Shadow
+  if (!isGhost && isSelected) {
+    c.shadowColor = col;
+    c.shadowBlur = 12;
+  }
+
+  // Fill
+  c.globalAlpha = alpha;
+  const r = ctx.createLinearGradient(p.x, p.y, p.x, p.y + ph);
+  r.addColorStop(0, hexToRgba(col, 0.35));
+  r.addColorStop(1, hexToRgba(col, 0.15));
+  c.fillStyle = r;
+  roundRect(c, p.x+1, p.y+1, pw-2, ph-2, 4);
+  c.fill();
+
+  // Border
+  c.strokeStyle = isSelected ? col : hexToRgba(col, 0.7);
+  c.lineWidth = isSelected ? 2 : 1.5;
+  roundRect(c, p.x+1, p.y+1, pw-2, ph-2, 4);
+  c.stroke();
+
+  // Shelf lines (decorative)
+  c.strokeStyle = hexToRgba(col, 0.25);
+  c.lineWidth = 0.8;
+  if (ph > 24) {
+    const shelves = Math.floor(ph / 14);
+    for (let s = 1; s < shelves; s++) {
+      const sy = p.y + s * (ph/shelves);
+      c.beginPath(); c.moveTo(p.x+4, sy); c.lineTo(p.x+pw-4, sy); c.stroke();
+    }
+  }
+
+  // ── LABEL ──
+  // Three-tier label system based on available pixel space:
+  //   tiny  (< 28px wide): label only (e.g. "22"")
+  //   small (28–55px wide): shortlabel (e.g. "22" K1")
+  //   large (> 55px wide):  sublabel on top, shortlabel below (e.g. "22" K1 Wheelchair")
+  c.save();
+  c.rect(p.x + 2, p.y + 2, pw - 4, ph - 4);
+  c.clip();
+
+  const label      = rack.label      || rack.type;
+  const shortlabel = rack.shortlabel || rack.label || rack.type;
+  const sublabel   = rack.sublabel   || '';
+  const cx2 = p.x + pw / 2;
+  const cy2 = p.y + ph / 2;
+
+  // Rotate 90° when rack is taller than wide
+  const rotate = ph > pw;
+  const availW = rotate ? ph : pw;
+  const availH = rotate ? pw : ph;
+
+  c.translate(cx2, cy2);
+  if (rotate) c.rotate(-Math.PI / 2);
+
+  c.textAlign    = 'center';
+  c.textBaseline = 'middle';
+
+  // Helper: truncate text to fit within maxPx width
+  function fitText(text, size) {
+    c.font = `600 ${size}px Sora`;
+    let t = text;
+    while (c.measureText(t).width > availW - 8 && t.length > 2) {
+      t = t.slice(0, -1);
+    }
+    return t.length < text.length ? t.trimEnd() + '…' : t;
+  }
+
+  if (availW < 16 || availH < 10) {
+    // Truly too tiny — skip
+  } else if (availW < 56) {
+    // TINY: just the bare label (e.g. "22"") — always render this
+    const sz = Math.max(7, Math.min(11, availW / 3.5));
+    c.font      = `700 ${sz}px Sora`;
+    c.fillStyle = isSelected ? '#fff' : hexToRgba('#e2e8f0', 0.95);
+    c.fillText(fitText(label, sz), 0, 0);
+  } else if (availW < 90 || !sublabel) {
+    // MEDIUM: shortlabel fits on one line (e.g. "22" K1")
+    const sz = Math.max(7, Math.min(11, availW / 6));
+    c.font      = `700 ${sz}px Sora`;
+    c.fillStyle = isSelected ? '#fff' : hexToRgba('#e2e8f0', 0.95);
+    c.fillText(fitText(shortlabel, sz), 0, 0);
+  } else {
+    // LARGE: two lines — sublabel on top, shortlabel below
+    const mainSz = Math.max(7, Math.min(11, availW / 8));
+    const subSz  = Math.max(6, Math.min(9,  availW / 10));
+    const mainText = fitText(sublabel,   mainSz);
+    const subText  = fitText(shortlabel, subSz);
+
+    c.font      = `700 ${mainSz}px Sora`;
+    c.fillStyle = isSelected ? '#fff' : hexToRgba('#e2e8f0', 0.95);
+    c.fillText(mainText, 0, -subSz / 2 - 2);
+
+    c.font      = `400 ${subSz}px Sora`;
+    c.fillStyle = hexToRgba(rack.color, 0.9);
+    c.fillText(subText, 0, mainSz / 2 + 2);
+  }
+
+  c.restore();
+  c.textAlign    = 'left';
+  c.textBaseline = 'alphabetic';
+
+  c.globalAlpha = 1;
+  c.shadowBlur = 0;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ── INTERACTION ─────────────────────────────────────
+
+const HANDLE_PX = 8; // pixels from edge to detect resize handle
+
+function getRackAt(cx, cy) {
+  const ft = canvasToFt(cx, cy);
+  for (let i = racks.length - 1; i >= 0; i--) {
+    const r = racks[i];
+    if (ft.x >= r.x && ft.x <= r.x + r.w && ft.y >= r.y && ft.y <= r.y + r.h) {
+      return r;
+    }
+  }
+  return null;
+}
+
+// Returns 'right', 'bottom', 'corner', or null
+function getResizeHandle(cx, cy, rack) {
+  const p  = ftToCanvas(rack.x, rack.y);
+  const pw = rack.w * SCALE;
+  const ph = rack.h * SCALE;
+  const nearRight  = Math.abs(cx - (p.x + pw)) < HANDLE_PX;
+  const nearBottom = Math.abs(cy - (p.y + ph)) < HANDLE_PX;
+  const insideX    = cx >= p.x - HANDLE_PX && cx <= p.x + pw + HANDLE_PX;
+  const insideY    = cy >= p.y - HANDLE_PX && cy <= p.y + ph + HANDLE_PX;
+  if (nearRight && nearBottom) return 'corner';
+  if (nearRight  && insideY)   return 'right';
+  if (nearBottom && insideX)   return 'bottom';
+  return null;
+}
+
+function isInWarehouse(fx, fy, fw, fh) {
+  const inMain    = fx >= 0 && fy >= 0 && fx+fw <= FLOOR.mainW && fy+fh <= FLOOR.mainH;
+  const inOffice  = fx >= FLOOR.officeX && fy >= FLOOR.officeY && fx+fw <= FLOOR.officeX+FLOOR.officeW && fy+fh <= FLOOR.officeY+FLOOR.officeH;
+  const inStorage = fx >= FLOOR.storageX && fy >= FLOOR.storageY && fx+fw <= FLOOR.storageX+FLOOR.storageW && fy+fh <= FLOOR.storageY+FLOOR.storageH;
+  return inMain || inOffice || inStorage;
+}
+
+let resizingRack   = null;
+let resizeAxis     = null; // 'right', 'bottom', 'corner'
+let resizeStartFt  = null;
+let resizeOrigW    = 0;
+let resizeOrigH    = 0;
+
+canvas.addEventListener('mousedown', e => {
+  const {offsetX: cx, offsetY: cy} = e;
+  const rack = getRackAt(cx, cy);
+  if (rack) {
+    const handle = getResizeHandle(cx, cy, rack);
+    if (handle) {
+      // Start resizing
+      resizingRack  = rack;
+      resizeAxis    = handle;
+      resizeStartFt = canvasToFt(cx, cy);
+      resizeOrigW   = rack.w;
+      resizeOrigH   = rack.h;
+      selectedId    = rack.id;
+      draggingRack  = null;
+    } else {
+      // Start dragging
+      selectedId   = rack.id;
+      draggingRack = rack;
+      resizingRack = null;
+      const rp = ftToCanvas(rack.x, rack.y);
+      dragOffset = {x: cx - rp.x, y: cy - rp.y};
+    }
+    showInfoBar(rack);
+    updateSidebar();
+    render();
+  } else {
+    selectedId   = null;
+    draggingRack = null;
+    resizingRack = null;
+    hideInfoBar();
+    updateSidebar();
+    render();
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const {offsetX: cx, offsetY: cy} = e;
+
+  if (resizingRack) {
+    const ft   = canvasToFt(cx, cy);
+    const minSize = 1;
+    if (resizeAxis === 'right' || resizeAxis === 'corner') {
+      const newW = snapToGrid(ft.x - resizingRack.x);
+      resizingRack.w = Math.max(minSize, Math.min(newW, TOTAL_W - resizingRack.x));
+    }
+    if (resizeAxis === 'bottom' || resizeAxis === 'corner') {
+      const newH = snapToGrid(ft.y - resizingRack.y);
+      resizingRack.h = Math.max(minSize, Math.min(newH, TOTAL_H - resizingRack.y));
+    }
+    showInfoBar(resizingRack);
+    updateStats();
+    render();
+    // Draw resize handle highlight
+    drawResizeHandles(resizingRack);
+    return;
+  }
+
+  if (draggingRack) {
+    const ft = canvasToFt(cx - dragOffset.x + draggingRack.w*SCALE/2, cy - dragOffset.y + draggingRack.h*SCALE/2);
+    draggingRack.x = snapToGrid(ft.x - draggingRack.w/2);
+    draggingRack.y = snapToGrid(ft.y - draggingRack.h/2);
+    draggingRack.x = Math.max(0, Math.min(draggingRack.x, TOTAL_W - draggingRack.w));
+    draggingRack.y = Math.max(0, Math.min(draggingRack.y, TOTAL_H - draggingRack.h));
+    showInfoBar(draggingRack);
+    updateStats();
+    render();
+    return;
+  }
+
+  if (ghostRack) {
+    const ft = canvasToFt(cx, cy);
+    ghostRack.x = snapToGrid(ft.x - ghostRack.w/2);
+    ghostRack.y = snapToGrid(ft.y - ghostRack.h/2);
+    render();
+    return;
+  }
+
+  // Hover: detect handles and update cursor
+  const rack = getRackAt(cx, cy);
+  const tt   = document.getElementById('tooltip');
+  if (rack) {
+    const handle = getResizeHandle(cx, cy, rack);
+    if (handle === 'corner') {
+      canvas.style.cursor = 'nwse-resize';
+    } else if (handle === 'right') {
+      canvas.style.cursor = 'ew-resize';
+    } else if (handle === 'bottom') {
+      canvas.style.cursor = 'ns-resize';
+    } else {
+      canvas.style.cursor = 'move';
+    }
+    tt.style.display = 'block';
+    tt.style.left    = (e.clientX + 12) + 'px';
+    tt.style.top     = (e.clientY - 10) + 'px';
+    tt.textContent   = `${rack.label} · ${rack.w}′ × ${rack.h}′  ${handle ? '↔ drag to resize' : '✥ drag to move'}`;
+  } else {
+    tt.style.display = 'none';
+    canvas.style.cursor = 'crosshair';
+  }
+
+  // Always redraw selected rack's resize handles on hover
+  if (selectedId !== null) {
+    render();
+    const sel = racks.find(r => r.id === selectedId);
+    if (sel) drawResizeHandles(sel);
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  resizingRack = null;
+  if (draggingRack) {
+    draggingRack = null;
+    updateSidebar();
+  }
+});
+
+// Draw visual resize handles on selected rack
+function drawResizeHandles(rack) {
+  const c  = ctx;
+  const p  = ftToCanvas(rack.x, rack.y);
+  const pw = rack.w * SCALE;
+  const ph = rack.h * SCALE;
+  const hs = 8; // handle square size
+
+  c.fillStyle   = '#ffffff';
+  c.strokeStyle = rack.color;
+  c.lineWidth   = 1.5;
+
+  const handles = [
+    [p.x + pw,       p.y + ph/2],   // right-mid
+    [p.x + pw/2,     p.y + ph],     // bottom-mid
+    [p.x + pw,       p.y + ph],     // corner
+  ];
+  handles.forEach(([hx, hy]) => {
+    c.beginPath();
+    c.rect(hx - hs/2, hy - hs/2, hs, hs);
+    c.fill();
+    c.stroke();
+  });
+}
+
+// Override render to also draw handles on selected rack
+const _origRender = render;
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawFloor();
+  if (showTruck) drawTruck();
+  racks.forEach(rack => drawRack(rack, rack.id === selectedId));
+  if (ghostRack) drawRack(ghostRack, false, true);
+  // Draw resize handles over selected
+  if (selectedId !== null) {
+    const sel = racks.find(r => r.id === selectedId);
+    if (sel) drawResizeHandles(sel);
+  }
+}
+
+// +/- button resize function
+function resizeSelected(axis, delta) {
+  if (selectedId === null) return;
+  const rack = racks.find(r => r.id === selectedId);
+  if (!rack) return;
+  if (axis === 'w') {
+    rack.w = Math.max(1, rack.w + delta);
+  } else {
+    rack.h = Math.max(1, rack.h + delta);
+  }
+  showInfoBar(rack);
+  updateStats();
+  render();
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'r' || e.key === 'R') {
+    if (selectedId !== null) {
+      const rack = racks.find(r => r.id === selectedId);
+      if (rack) {
+        [rack.w, rack.h] = [rack.h, rack.w];
+        showInfoBar(rack);
+        updateStats();
+        render();
+      }
+    }
+  }
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (selectedId !== null) {
+      racks = racks.filter(r => r.id !== selectedId);
+      selectedId = null;
+      hideInfoBar();
+      updateStats();
+      updateSidebar();
+      render();
+    }
+  }
+  if (e.key === 'Escape') {
+    ghostRack = null;
+    selectedId = null;
+    draggingRack = null;
+    hideInfoBar();
+    updateSidebar();
+    render();
+  }
+});
+
+// ── DRAG FROM PALETTE ────────────────────────────────
+
+document.querySelectorAll('.rack-item').forEach(item => {
+  item.addEventListener('dragstart', e => {
+    const type  = item.dataset.type;
+    const w     = parseFloat(item.dataset.w);
+    const h     = parseFloat(item.dataset.h);
+    const color = item.dataset.color;
+    ghostRack = { type, w, h, color, x: 0, y: 0, id: -1,
+                  label: item.querySelector('.rack-name').textContent };
+    e.dataTransfer.setData('rack', JSON.stringify({type, w, h, color,
+      label: item.querySelector('.rack-name').textContent}));
+  });
+  item.addEventListener('dragend', () => { ghostRack = null; render(); });
+});
+
+const canvasWrap = document.getElementById('canvas-wrap');
+canvasWrap.addEventListener('dragover', e => {
+  e.preventDefault();
+  if (ghostRack) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+    const ft = canvasToFt(cx, cy);
+    ghostRack.x = Math.max(0, Math.min(snapToGrid(ft.x - ghostRack.w/2), TOTAL_W - ghostRack.w));
+    ghostRack.y = Math.max(0, Math.min(snapToGrid(ft.y - ghostRack.h/2), TOTAL_H - ghostRack.h));
+    render();
+  }
+});
+
+canvasWrap.addEventListener('drop', e => {
+  e.preventDefault();
+  const data = JSON.parse(e.dataTransfer.getData('rack'));
+  const rect  = canvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const ft = canvasToFt(cx, cy);
+  const rx = Math.max(0, Math.min(snapToGrid(ft.x - data.w/2), TOTAL_W - data.w));
+  const ry = Math.max(0, Math.min(snapToGrid(ft.y - data.h/2), TOTAL_H - data.h));
+
+  const newRack = {
+    id: ++idCounter,
+    type: data.type,
+    label: data.label,
+    w: data.w, h: data.h,
+    x: rx, y: ry,
+    color: data.color
+  };
+  racks.push(newRack);
+  selectedId = newRack.id;
+  ghostRack = null;
+  showInfoBar(newRack);
+  updateStats();
+  updateSidebar();
+  render();
+});
+
+// ── UI HELPERS ───────────────────────────────────────
+
+function showInfoBar(rack) {
+  const bar = document.getElementById('info-bar');
+  bar.classList.add('visible');
+  document.getElementById('info-name').textContent = rack.label;
+  document.getElementById('info-pos').textContent  = `(${rack.x}′, ${rack.y}′)`;
+  document.getElementById('info-w').textContent    = `${rack.w}′`;
+  document.getElementById('info-h').textContent    = `${rack.h}′`;
+}
+function hideInfoBar() {
+  document.getElementById('info-bar').classList.remove('visible');
+}
+
+function updateStats() {
+  const total = 1728; // 936 main + 242 office + 250 storage + 300 mezzanine
+  const used  = racks.reduce((s, r) => s + r.w * r.h, 0);
+  document.getElementById('stat-racks').textContent = racks.length;
+  document.getElementById('stat-sqft').textContent  = used;
+  document.getElementById('stat-free').textContent  = total - used;
+}
+
+function updateSidebar() {
+  const list = document.getElementById('placed-list');
+  document.getElementById('placed-count').textContent = racks.length;
+  list.innerHTML = '';
+  racks.forEach(rack => {
+    const el = document.createElement('div');
+    el.className = 'placed-item' + (rack.id === selectedId ? ' selected-list' : '');
+    el.innerHTML = `
+      <div class="placed-dot" style="background:${rack.color}"></div>
+      <div class="placed-name">${rack.label}</div>
+      <div class="placed-pos">${rack.x}′,${rack.y}′</div>
+      <button class="delete-btn" data-id="${rack.id}" title="Remove">✕</button>
+    `;
+    el.addEventListener('click', ev => {
+      if (ev.target.classList.contains('delete-btn')) return;
+      selectedId = rack.id;
+      showInfoBar(rack);
+      updateSidebar();
+      render();
+    });
+    el.querySelector('.delete-btn').addEventListener('click', () => {
+      racks = racks.filter(r => r.id !== rack.id);
+      if (selectedId === rack.id) { selectedId = null; hideInfoBar(); }
+      updateStats();
+      updateSidebar();
+      render();
+    });
+    list.appendChild(el);
+  });
+}
+
+function toggleGrid() { showGrid = !showGrid; render(); }
+
+function clearSelected() {
+  selectedId = null;
+  draggingRack = null;
+  hideInfoBar();
+  updateSidebar();
+  render();
+}
+
+function clearAll() {
+  if (confirm('Clear all racks?')) {
+    racks = [];
+    selectedId = null;
+    draggingRack = null;
+    ghostRack = null;
+    hideInfoBar();
+    updateStats();
+    updateSidebar();
+    render();
+  }
+}
+
+function saveLayout() {
+  const data = JSON.stringify({ racks, date: new Date().toISOString() }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'santa_rosa_rack_layout.json';
+  a.click();
+}
+
+// ── INIT ─────────────────────────────────────────────
+window.addEventListener('resize', resizeCanvas);
+
+function loadDMELayout() {
+  // ── LAYOUT PLAN ──
+  // Building: 36' wide × 48' deep. Main warehouse: 36' × 26'
+  // Front wall = top (y=0). Back wall = y=26. Left wall = x=0 (roll-up door). Right wall = x=36.
+  //
+  // FROM THE SCREENSHOT: racking starts top-left (front wall) running across,
+  // then right wall running down, with beds + power chairs on back wall.
+  //
+  // FRONT WALL (y=0, running left→right, depth=2ft each rack)
+  // Each section = 4' wide × 2' deep unless noted
+  //
+  // Section order left→right along front wall:
+  //   [0]  Wheelchairs 22"   4'w
+  //   [1]  Wheelchairs 20"   4'w
+  //   [2]  Wheelchairs 18"   4'w
+  //   [3]  Wheelchairs 16"   4'w
+  //   [4]  Transport Chairs  4'w
+  //   [5]  Walkers Standard  4'w
+  //   [6]  Walkers Front Whl 4'w
+  //   [7]  Walkers 4-Wheel   4'w
+  //   [8]  Shower Chairs     4'w
+  //   [9]  Tub Transfer Bench 4'w
+  //   [10] Commode            4'w   (total = 44' — fits 36' wall then wraps)
+  //
+  // RIGHT WALL (x=34, running top→bottom, depth=2ft)
+  //   Continues bathroom DME + wraps to right wall
+  //
+  // BACK WALL (y=24, running left→right)
+  //   Half rack = Beds (Full Rail / Half Rail) sections — 12'w
+  //   Rest = Power Chair + CRT Chair storage — 24'w
+
+  const dmeRacks = [];
+  let id = 1;
+
+  // Colors by category
+  const C = {
+    wc:       '#3b82f6',  // blue  - wheelchairs
+    transport:'#60a5fa',  // light blue - transport
+    walker:   '#10b981',  // green - walkers
+    bathroom: '#8b5cf6',  // purple - bathroom DME
+    beds:     '#f59e0b',  // amber - beds
+    power:    '#ef4444',  // red - power/CRT chairs
+  };
+
+  // ── FRONT WALL sections (y=0, depth=2, stacked along top) ──
+  const frontSections = [
+    { label: '22"',   shortlabel: '22" K1',   sublabel: '22" K1 Wheelchair',  w:4, color: C.wc },
+    { label: '20"',   shortlabel: '20" K1',   sublabel: '20" K1 Wheelchair',  w:4, color: C.wc },
+    { label: '18"',   shortlabel: '18" K1',   sublabel: '18" K1 Wheelchair',  w:4, color: C.wc },
+    { label: '16"',   shortlabel: '16" K1',   sublabel: '16" K1 Wheelchair',  w:4, color: C.wc },
+    { label: 'Trans', shortlabel: 'Transport', sublabel: 'Transport Chairs',   w:4, color: C.transport },
+    { label: '0WW',  shortlabel: '0WW Walker', sublabel: 'Standard Walker',     w:4, color: C.walker },
+    { label: '2WW',  shortlabel: '2WW Walker', sublabel: 'Front-Wheel Walker',  w:4, color: C.walker },
+    { label: '4WW',  shortlabel: '4WW Walker', sublabel: '4-Wheel Walker',      w:4, color: C.walker },
+    { label: 'Shower',shortlabel: 'Shower Chair',sublabel: 'Shower Chairs',   w:4, color: C.bathroom },
+    { label: 'Tub',   shortlabel: 'Tub Transfer',sublabel: 'Tub Transfer Bench', w:4, color: C.bathroom },
+  ];
+
+  // Place along front wall (y=0), left to right, max 36' wide
+  // First row: as many as fit (36/4 = 9 fit, 10th wraps to second row)
+  let fx = 0;
+  let row = 0;
+  frontSections.forEach((sec, i) => {
+    if (fx + sec.w > 36) { fx = 0; row++; }
+    dmeRacks.push({
+      id: id++, type: 'dme', label: sec.label, shortlabel: sec.shortlabel, sublabel: sec.sublabel,
+      w: sec.w, h: 2, x: fx, y: row * 2, color: sec.color
+    });
+    fx += sec.w;
+  });
+  // Commode goes on right wall since front is full
+  // Right wall: x=34, running top→bottom
+  dmeRacks.push({
+    id: id++, type: 'dme', label: 'Commode', sublabel: 'Commode',
+    w: 2, h: 4, x: 34, y: 4, color: C.bathroom
+  });
+
+  // ── BACK WALL sections (y=22, depth=2, along bottom of main area) ──
+  // Left half (~18'): Beds section split into Full Rail / Half Rail
+  dmeRacks.push({
+    id: id++, type: 'dme', label: 'Beds - Full Rail', sublabel: 'Full Rail Beds',
+    w: 10, h: 2, x: 0, y: 24, color: C.beds
+  });
+  dmeRacks.push({
+    id: id++, type: 'dme', label: 'Beds - Half Rail', sublabel: 'Half Rail Beds',
+    w: 8, h: 2, x: 10, y: 24, color: C.beds
+  });
+
+  // Right half (~18'): Power Chair + CRT Chair storage
+  dmeRacks.push({
+    id: id++, type: 'dme', label: 'Power Chairs', sublabel: 'Power Chair Storage',
+    w: 10, h: 2, x: 18, y: 24, color: C.power
+  });
+  dmeRacks.push({
+    id: id++, type: 'dme', label: 'CRT Chairs', sublabel: 'Custom CRT Chair Storage',
+    w: 8, h: 2, x: 28, y: 24, color: C.power
+  });
+
+  racks = dmeRacks;
+  idCounter = id;
+  updateStats();
+  updateSidebar();
+  render();
+}
+
+resizeCanvas();
+updateStats();
+
+// ── PERSISTENT STORAGE (localStorage) ──
+// Auto-saves on every change. Persists in the browser across visits.
+
+const STORAGE_KEY = 'medicare-drop-santa-rosa-layout';
+
+async function saveToStorage() {
+  try {
+    const data = JSON.stringify({ racks, idCounter, savedAt: new Date().toISOString() });
+    localStorage.setItem(STORAGE_KEY, data);
+  } catch(e) { /* storage full or unavailable */ }
+}
+
+async function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.racks && parsed.racks.length > 0) {
+        racks = parsed.racks;
+        idCounter = parsed.idCounter || parsed.racks.length + 1;
+        updateStats();
+        updateSidebar();
+        render();
+        showSaveIndicator('✓ Layout restored');
+        return true;
+      }
+    }
+  } catch(e) { /* no saved data */ }
+  return false;
+}
+
+function showSaveIndicator(msg) {
+  const el = document.getElementById('save-indicator');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 2500);
+}
+
+// Patch all mutating functions to trigger auto-save
+const _origUpdateStats = updateStats;
+updateStats = function() {
+  _origUpdateStats();
+  saveToStorage();
+  showSaveIndicator('💾 Saved');
+};
+
+// Init: try loading saved layout, fallback to DME defaults
+(async () => {
+  const loaded = await loadFromStorage();
+  if (!loaded) setTimeout(loadDMELayout, 100);
+})();
+
+// ── 3D RENDER ─────────────────────────────────────────
+
+// Medline.com product image URLs per DME category
+// Using direct CDN image URLs that are publicly accessible
+const MEDLINE_IMAGES = {
+  'Wheelchair 22"':          'https://medline.com/media/catalog/product/G/U/GUP160C4A_A.jpg',
+  'Wheelchair 20"':          'https://medline.com/media/catalog/product/G/U/GUP160C4A_A.jpg',
+  'Wheelchair 18"':          'https://medline.com/media/catalog/product/M/D/MDS806250_A.jpg',
+  'Wheelchair 16"':          'https://medline.com/media/catalog/product/M/D/MDS806250_A.jpg',
+  'Transport Chairs':        'https://medline.com/media/catalog/product/M/D/MDS808200_A.jpg',
+  'Standard Walker':         'https://medline.com/media/catalog/product/M/D/MDS86010XW_A.jpg',
+  'Front-Wheel Walker':      'https://medline.com/media/catalog/product/M/D/MDS86010FW_A.jpg',
+  '4-Wheel Walker':          'https://medline.com/media/catalog/product/M/D/MDS86840_A.jpg',
+  'Shower Chairs':           'https://medline.com/media/catalog/product/M/D/MDS89664_A.jpg',
+  'Tub Transfer Bench':      'https://medline.com/media/catalog/product/M/D/MDS89664TBR_A.jpg',
+  'Commode':                 'https://medline.com/media/catalog/product/M/D/MDS89664_A.jpg',
+  'Full Rail Beds':          'https://medline.com/media/catalog/product/M/D/MED10251D_A.jpg',
+  'Half Rail Beds':          'https://medline.com/media/catalog/product/M/D/MED10251D_A.jpg',
+  'Power Chair Storage':     'https://medline.com/media/catalog/product/E/V/EV9963ADLXPC_A.jpg',
+  'Custom CRT Chair Storage':'https://medline.com/media/catalog/product/E/V/EV9963ADLXPC_A.jpg',
+};
+
+// Medline search page URLs so Claude can reference what each product looks like
+const MEDLINE_SEARCH = {
+  wheelchairs:    'https://www.medline.com/category/Wheelchairs/cat1090046',
+  transportChair: 'https://www.medline.com/category/Transport-Chairs/cat1450059',
+  walkers:        'https://www.medline.com/category/Walkers/cat1090051',
+  bathroom:       'https://www.medline.com/category/Bath-Safety/cat1090073',
+  beds:           'https://www.medline.com/category/Home-Care-Beds/cat1090060',
+  powerChairs:    'https://www.medline.com/category/Power-Wheelchairs/cat1450043',
+};
+
+async function open3DRender() {
+  document.getElementById('render-modal').classList.add('open');
+  document.getElementById('render-loading').style.display = 'flex';
+  document.getElementById('render-iframe').style.display = 'none';
+
+  const steps = [
+    'Analyzing rack layout…',
+    'Fetching Medline product references…',
+    'Building 3D scene geometry…',
+    'Placing DME products on shelves…',
+    'Applying PBR materials & lighting…',
+    'Final render pass…'
+  ];
+  let stepIdx = 0;
+  const stepEl = document.getElementById('render-step');
+  const stepTimer = setInterval(() => {
+    stepEl.textContent = steps[Math.min(stepIdx++, steps.length - 1)];
+  }, 1600);
+
+  // Build detailed rack layout with product image references
+  const layoutDesc = racks.map(r => {
+    const imgUrl = MEDLINE_IMAGES[r.sublabel] || MEDLINE_IMAGES[r.label] || '';
+    return `  - ${r.sublabel || r.label}: pos=(${r.x}ft, ${r.y}ft) size=${r.w}ft wide × ${r.h}ft deep, color=${r.color}${imgUrl ? `, medline_product_img="${imgUrl}"` : ''}`;
+  }).join('\n');
+
+  const prompt = `You are a world-class Three.js 3D visualization expert. Generate a COMPLETE, self-contained HTML file that renders a hyper-realistic 3D DME medical equipment warehouse.
+
+═══ WAREHOUSE ARCHITECTURE ═══
+• Floor plan: 36ft wide × 48ft deep, 14ft ceiling height
+• Main warehouse: full 36ft × 26ft open area (front section)
+• Office/Mezzanine: 11ft × 22ft bottom-left
+• Storage mezzanine: 25ft × 10ft bottom-middle
+• Restroom: 10ft × 10ft bottom-right
+• Roll-up loading door: left wall, 6ft from front, 14ft tall × 12ft wide
+• Fluorescent lighting grid: 4 rows of 3 tube fixtures across ceiling
+• Epoxy warehouse floor with painted aisle lines
+
+═══ RACK LAYOUT ═══
+${layoutDesc}
+
+═══ PRODUCT IMAGERY ═══
+Each rack section should display a realistic billboard/plane on the front face showing the actual medical equipment stored there. Use these Medline.com product image URLs as THREE.TextureLoader textures on flat PlaneGeometry billboards mounted to the front of each rack:
+- Wheelchairs (22", 20", 18", 16"): https://medline.com/media/catalog/product/G/U/GUP160C4A_A.jpg
+- Transport Chair: https://medline.com/media/catalog/product/M/D/MDS808200_A.jpg
+- Standard Walker: https://medline.com/media/catalog/product/M/D/MDS86010XW_A.jpg
+- Front-Wheel Walker: https://medline.com/media/catalog/product/M/D/MDS86010FW_A.jpg
+- 4-Wheel Walker: https://medline.com/media/catalog/product/M/D/MDS86840_A.jpg
+- Shower Chair: https://medline.com/media/catalog/product/M/D/MDS89664_A.jpg
+- Tub Transfer Bench: https://medline.com/media/catalog/product/M/D/MDS89664TBR_A.jpg
+- Commode: https://medline.com/media/catalog/product/M/D/MDS89664_A.jpg
+- Beds: https://medline.com/media/catalog/product/M/D/MED10251D_A.jpg
+- Power/CRT Chairs: https://medline.com/media/catalog/product/E/V/EV9963ADLXPC_A.jpg
+
+If any texture fails to load (CORS), fall back to a colored MeshStandardMaterial plane with a canvas-generated text label.
+
+═══ RENDERING REQUIREMENTS ═══
+LIBRARIES (use exact URLs):
+  • Three.js r128: https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js
+  • OrbitControls: https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js
+
+SCENE:
+  • Background color: #050810 (deep space navy)
+  • Exponential fog: color #0a0d1a, density 0.008
+  • Ambient light: #334466 intensity 0.6
+  • 6 ceiling SpotLights: warm white #fff5e0, intensity 1.8, angle 0.5, penumbra 0.4, cast shadows
+  • 2 RectAreaLights near roll-up door simulating outside daylight: #b0d4ff
+
+MATERIALS:
+  • Floor: MeshStandardMaterial, color #1c1c2e, roughness 0.8, metalness 0.1, with canvas-generated grid texture (subtle white lines every 2ft)
+  • Walls: MeshStandardMaterial, color #1a2035, roughness 0.9, metalness 0.2
+  • Ceiling: MeshStandardMaterial, color #0f1118
+  • Rack frames: MeshStandardMaterial, color #2a3a4a (steel grey), roughness 0.4, metalness 0.7
+  • Rack shelves: slightly lighter steel #3a4a5a
+  • Each rack has color-tinted shelf panels using the provided hex color at opacity 0.3
+
+SHELVING UNITS (for each rack in the layout):
+  • Build realistic 3D shelving: vertical uprights (box geometry, 0.1ft × 14ft tall × 0.1ft) 
+  • Horizontal shelf boards every 2ft of height (box geometry, rack_width × 0.1ft × rack_depth)
+  • Front face billboard: PlaneGeometry showing product image
+  • Rack label text canvas sprite floating above unit
+
+ROLL-UP DOOR:
+  • Corrugated metal look: multiple thin horizontal BoxGeometry slats, color #445566
+  • Slightly open (bottom 4ft raised): bright rectangle of outside light #88aaff shining in
+  • Door frame: darker steel
+
+SPECIAL DETAILS:
+  • Painted floor aisle lines (yellow, 0.1ft wide) between rack rows
+  • Wall-mounted exit signs (red box geometries with EmissiveMaterial)
+  • Ceiling-mounted fire sprinkler heads (small cylinder + sphere)
+  • Loading dock bumpers near roll-up door
+
+CAMERA:
+  • Initial position: (25, 18, 35) looking at center (18, 4, 13)
+  • OrbitControls with minDistance=5, maxDistance=80, maxPolarAngle=Math.PI*0.48
+  • Smooth damping enabled
+
+POST-PROCESSING (CSS only, no postprocessing library):
+  • Full-viewport canvas
+  • CSS vignette overlay: radial-gradient darkening edges
+
+PERFORMANCE:
+  • Enable renderer shadowMap (PCFSoftShadowMap)
+  • renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
+
+Return ONLY the raw HTML file. Absolutely no markdown, no code fences, no explanation before or after.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 12000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await resp.json();
+    let html = data.content.map(b => b.type === 'text' ? b.text : '').join('');
+
+    // Strip any accidental markdown fences
+    html = html.replace(/^```html?\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/,'').trim();
+
+    clearInterval(stepTimer);
+    document.getElementById('render-loading').style.display = 'none';
+
+    const iframe = document.getElementById('render-iframe');
+    iframe.style.display = 'block';
+    iframe.srcdoc = html;
+
+  } catch (err) {
+    clearInterval(stepTimer);
+    stepEl.textContent = '⚠ Error generating render — please try again.';
+    document.getElementById('render-loading-spinner').style.display = 'none';
+    console.error('3D render error:', err);
+  }
+}
+
+function close3DRender() {
+  document.getElementById('render-modal').classList.remove('open');
+  document.getElementById('render-iframe').srcdoc = '';
+}
+</script>
+<!-- 3D Render Modal -->
+<div id="render-modal">
+  <div class="render-modal-box">
+    <div class="render-modal-header">
+      <div class="render-modal-title">✦ Hyper-Realistic 3D Warehouse Render — Santa Rosa</div>
+      <button class="render-modal-close" onclick="close3DRender()">✕ Close</button>
+    </div>
+    <div class="render-modal-body">
+      <div class="render-loading" id="render-loading">
+        <div class="render-loading-spinner"></div>
+        <div class="render-loading-text">
+          Generating your 3D warehouse…<br>
+          <span style="font-size:11px;color:#6d28d9">Powered by Claude AI + Medline product imagery</span>
+        </div>
+        <div class="render-loading-step" id="render-step">Analyzing rack layout…</div>
+      </div>
+      <iframe id="render-iframe" style="display:none"></iframe>
+    </div>
+    <div class="render-controls">
+      <span>🖱 Left drag = Orbit</span>
+      <span>🖱 Right drag = Pan</span>
+      <span>🖱 Scroll = Zoom</span>
+      <span class="render-hint">3D scene by Claude AI · Product imagery from medline.com</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
