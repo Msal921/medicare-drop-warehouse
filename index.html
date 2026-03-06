@@ -916,8 +916,14 @@
       c.lineWidth = 1.5;
       roundRect(c, cargoX, tp.y + th * 0.05, cargoW - 4, th * 0.9, 4);
       c.stroke();
-
-
+      // Logo + branding on cargo side
+      c.font = `bold ${Math.max(9, th * 0.16)}px Sora`;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillStyle = '#1e3a5f';
+      c.fillText('💊 Medicare Drop', cargoX + (cargoW - 4) / 2, tp.y + th / 2);
+      c.textAlign = 'left';
+      c.textBaseline = 'alphabetic';
 
       // Cargo door lines (vertical panels)
       c.strokeStyle = '#cbd5e1';
