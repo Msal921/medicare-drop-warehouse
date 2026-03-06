@@ -1020,14 +1020,14 @@
       });
 
       // ── WALL CLIP LINE (building left wall) ──
-      // Draw a subtle overlay where the truck passes through the wall
+      // Subtle dashed line where truck passes through wall opening
       const wallX = ftToCanvas(0, 0).x;
-      c.strokeStyle = 'rgba(100,116,139,0.6)';
-      c.lineWidth = 3;
-      c.setLineDash([4, 3]);
+      c.strokeStyle = 'rgba(100,116,139,0.3)';
+      c.lineWidth = 1.5;
+      c.setLineDash([3, 3]);
       c.beginPath();
-      c.moveTo(wallX, tp.y - 10);
-      c.lineTo(wallX, tp.y + th + 10);
+      c.moveTo(wallX, tp.y + 2);
+      c.lineTo(wallX, tp.y + th - 2);
       c.stroke();
       c.setLineDash([]);
 
@@ -1249,14 +1249,30 @@
       const tl = ftToCanvas(0, 0);
       c.strokeStyle = '#64748b';
       c.lineWidth = 3;
-      // Main outline of full building
+      // Main outline of full building — left wall broken at door opening
       c.beginPath();
       c.moveTo(tl.x, tl.y);
       c.lineTo(tl.x + FLOOR.bldgW * SCALE, tl.y);
       c.lineTo(tl.x + FLOOR.bldgW * SCALE, tl.y + FLOOR.bldgH * SCALE);
       c.lineTo(tl.x, tl.y + FLOOR.bldgH * SCALE);
+      // Left wall: bottom up to door bottom
+      const doorTopPx = ftToCanvas(0, FLOOR.doorY).y;
+      const doorBotPx = ftToCanvas(0, FLOOR.doorY + FLOOR.doorH).y;
+      c.lineTo(tl.x, doorBotPx);
+      c.moveTo(tl.x, doorTopPx);
       c.lineTo(tl.x, tl.y);
       c.stroke();
+      // Door opening: dashed line to show the opening
+      if (!showTruck) {
+        c.strokeStyle = '#475569';
+        c.lineWidth = 1;
+        c.setLineDash([4, 4]);
+        c.beginPath();
+        c.moveTo(tl.x, doorTopPx);
+        c.lineTo(tl.x, doorBotPx);
+        c.stroke();
+        c.setLineDash([]);
+      }
 
       // ── DIMENSION LABELS ──
       c.fillStyle = '#64748b';
