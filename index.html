@@ -687,13 +687,13 @@
     <button class="rename-btn" id="rename-btn" onclick="renameSelected()" title="Rename (F2)">✏️ Rename</button>
     <span>Pos: </span><strong id="info-pos">—</strong>
     <span>W:</span>
-    <button class="size-btn" onclick="resizeSelected('w',-1)">−</button>
+    <button class="size-btn" onclick="resizeSelected('w',-0.5)">−</button>
     <strong id="info-w">—</strong>
-    <button class="size-btn" onclick="resizeSelected('w', 1)">+</button>
+    <button class="size-btn" onclick="resizeSelected('w', 0.5)">+</button>
     <span>D:</span>
-    <button class="size-btn" onclick="resizeSelected('h',-1)">−</button>
+    <button class="size-btn" onclick="resizeSelected('h',-0.5)">−</button>
     <strong id="info-h">—</strong>
-    <button class="size-btn" onclick="resizeSelected('h', 1)">+</button>
+    <button class="size-btn" onclick="resizeSelected('h', 0.5)">+</button>
     <div class="rotate-hint">R = Rotate</div>
     <div class="rotate-hint">Del = Remove</div>
     <div class="rotate-hint">Shift+Click = Multi</div>
@@ -779,7 +779,7 @@
 
     <div class="canvas-wrap" id="canvas-wrap">
       <canvas id="canvas"></canvas>
-      <div class="scale-bar">Scale: 1 grid square = 1 ft · Snap: 1 ft</div>
+      <div class="scale-bar">Scale: 1 grid square = 1 ft · Snap: 0.5 ft</div>
       <div class="legend">
         <div class="legend-title">DME Categories</div>
         <div class="legend-item">
@@ -825,7 +825,7 @@
     // Roll-up door: left wall, upper area
 
     const SCALE = 13; // pixels per foot
-    const GRID = 1;   // grid snap in feet — supports 1, 2, 3, 4ft etc.
+    const GRID = 0.5;   // grid snap in feet — half-foot precision
     const GRID_PX = GRID * SCALE;
 
     // Floor plan definition — origin (0,0) = top-left corner of building
@@ -1648,8 +1648,8 @@
     function resizeSelected(axis, delta) {
       if (selectedIds.size === 0) return;
       racks.filter(r => selectedIds.has(r.id)).forEach(rack => {
-        if (axis === 'w') { rack.w = Math.max(1, rack.w + delta); }
-        else { rack.h = Math.max(1, rack.h + delta); }
+        if (axis === 'w') { rack.w = Math.max(0.5, rack.w + delta); }
+        else { rack.h = Math.max(0.5, rack.h + delta); }
       });
       showInfoBar();
       updateStats();
